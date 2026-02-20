@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Goop Cafetería — Sistema de gestión para cafetería con catálogo, pedidos e inventario." />
+    <title>Goop Cafetería</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+
+    <!-- ═══════════════════ NAVBAR ═══════════════════ -->
+    <nav class="navbar" role="navigation" aria-label="Navegación principal">
+        <div class="navbar-brand">
+            <span class="brand-icon">☕</span>
+            <span class="brand-name">Goop</span>
+        </div>
+        <ul class="navbar-links" role="list">
+            <!-- Auth Links -->
+            <li id="nav-item-login"><button class="nav-btn active" onclick="navigate('auth')">Iniciar Sesión</button>
+            </li>
+            <!-- Main Links (hidden by default) -->
+            <li class="auth-only" hidden><button class="nav-btn" id="nav-catalog" onclick="navigate('catalog')"
+                    aria-current="page">Catálogo</button></li>
+            <li class="admin-only" hidden><button class="nav-btn" id="nav-admin"
+                    onclick="navigate('admin')">Admin</button></li>
+            <li class="auth-only" hidden><button class="nav-btn" id="nav-docs"
+                    onclick="navigate('docs')">Documentación</button></li>
+            <li class="auth-only" hidden><button class="nav-btn btn-logout" onclick="logout()">Salir <span
+                        id="user-display"></span></button></li>
+        </ul>
+        <button class="hamburger" id="hamburger" aria-label="Abrir menú" aria-expanded="false"
+            onclick="toggleMobileMenu()">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- ═══════════════════ TOAST CONTAINER ═══════════════════ -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ═══════════════════ VIEW: AUTH (LOGIN/REGISTER) ═══════════════════ -->
+    <main id="view-auth" class="view active" aria-label="Autenticación">
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1 class="auth-title">Bienvenido a Goop</h1>
+                    <p class="auth-subtitle">Inicia sesión para gestionar tus pedidos</p>
+                </div>
+
+                <!-- Login Form -->
+                <form id="form-login" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-username">Usuario</label>
+                        <input type="text" id="login-username" placeholder="Tu usuario" required
+                            autocomplete="username" />
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Contraseña</label>
+                        <input type="password" id="login-password" placeholder="Tu contraseña" required
+                            autocomplete="current-password" />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Entrar</button>
+                </form>
+
+                <!-- Register Form (Hidden by default) -->
+                <form id="form-register" onsubmit="handleRegister(event)" hidden>
+                    <div class="form-group">
+                        <label for="reg-username">Nuevo Usuario</label>
+                        <input type="text" id="reg-username" placeholder="Elige un nombre de usuario" required
+                            autocomplete="username" />
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Contraseña</label>
+                        <input type="password" id="reg-password" placeholder="Mínimo 4 caracteres" required
+                            autocomplete="new-password" minlength="4" />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Registrarse</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p id="msg-to-register">¿No tienes cuenta? <button class="btn-link"
+                            onclick="toggleAuthMode('register')">Regístrate aquí</button></p>
+                    <p id="msg-to-login" hidden>¿Ya tienes cuenta? <button class="btn-link"
+                            onclick="toggleAuthMode('login')">Inicia sesión aquí</button></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══════════════════ VIEW: CATÁLOGO ═══════════════════ -->
+    <main id="view-catalog" class="view" aria-label="Catálogo de productos" hidden>
+        <section class="catalog-hero">
+            <div class="hero-content">
+                <p class="hero-eyebrow">Bienvenido a</p>
+                <h1 class="hero-title">Goop Cafetería</h1>
+                <p class="hero-subtitle">Sabores auténticos, momentos únicos</p>
+            </div>
+        </section>
+
+        <!-- User Orders Section (Visible for all users) -->
+        <section class="user-orders-section" id="user-orders-section">
+            <div class="section-header">
+                <h2 class="section-title">Mis Pedidos</h2>
+                <button class="btn btn-primary" onclick="openModal('order')" id="btn-user-order">
+                    <span>+</span> Crear Pedido
+                </button>
+            </div>
+            <div class="orders-grid" id="user-orders-grid" role="list">
+                <!-- Rendered by JS -->
+            </div>
+        </section>
+
+        <section class="catalog-section">
+            <h2 class="section-title">Nuestro Menú</h2>
+            <div class="catalog-filters" role="group" aria-label="Filtros de categoría">
+                <button class="filter-btn active" onclick="filterCatalog('all')" data-filter="all">Todos</button>
+                <button class="filter-btn" onclick="filterCatalog('Bebidas')" data-filter="Bebidas">Bebidas</button>
+                <button class="filter-btn" onclick="filterCatalog('Alimentos')"
+                    data-filter="Alimentos">Alimentos</button>
+                <button class="filter-btn" onclick="filterCatalog('Postres')" data-filter="Postres">Postres</button>
+            </div>
+            <div class="catalog-grid" id="catalog-grid" role="list" aria-label="Productos disponibles">
+                <!-- Rendered by JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- ═══════════════════ VIEW: ADMIN DASHBOARD ═══════════════════ -->
+    <main id="view-admin" class="view" aria-label="Panel de administración" hidden>
+        <div class="admin-header">
+            <h1 class="page-title">Panel de Administración</h1>
+            <p class="page-subtitle">Gestiona el menú, pedidos e inventario de Goop</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" role="list" aria-label="Estadísticas generales">
+            <div class="stat-card" role="listitem">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                    <line x1="6" y1="1" x2="6" y2="4"></line>
+                    <line x1="10" y1="1" x2="10" y2="4"></line>
+                    <line x1="14" y1="1" x2="14" y2="4"></line>
+                </svg>
+                <div>
+                    <p class="stat-label">Productos</p>
+                    <p class="stat-value" id="stat-products">0</p>
+                </div>
+            </div>
+            <div class="stat-card" role="listitem">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"></path>
+                    <rect x="9" y="3" width="6" height="4" rx="2"></rect>
+                    <path d="M9 14l2 2 4-4"></path>
+                </svg>
+                <div>
+                    <p class="stat-label">Pedidos Activos</p>
+                    <p class="stat-value" id="stat-orders">0</p>
+                </div>
+            </div>
+            <div class="stat-card" role="listitem">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                    </path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <div>
+                    <p class="stat-label">Stock Bajo</p>
+                    <p class="stat-value" id="stat-lowstock">0</p>
+                </div>
+            </div>
+            <div class="stat-card" role="listitem">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <div>
+                    <p class="stat-label">Ventas del Día</p>
+                    <p class="stat-value" id="stat-sales">$0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Tabs -->
+        <div class="admin-tabs" role="tablist" aria-label="Secciones de administración">
+            <button class="tab-btn active" id="tab-menu" role="tab" aria-selected="true" aria-controls="panel-menu"
+                onclick="switchTab('menu')">Menú</button>
+            <button class="tab-btn" id="tab-orders" role="tab" aria-selected="false" aria-controls="panel-orders"
+                onclick="switchTab('orders')">Pedidos</button>
+            <button class="tab-btn" id="tab-inventory" role="tab" aria-selected="false" aria-controls="panel-inventory"
+                onclick="switchTab('inventory')">Inventario</button>
+        </div>
+
+        <!-- TAB PANEL: MENÚ -->
+        <div id="panel-menu" class="tab-panel active" role="tabpanel" aria-labelledby="tab-menu">
+            <div class="panel-header">
+                <h2 class="panel-title">Menú de Productos</h2>
+                <button class="btn btn-primary" onclick="openModal('menu')" id="btn-add-menu">
+                    <span>+</span> Agregar Producto
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <table class="data-table" aria-label="Tabla de productos del menú">
+                    <thead>
+                        <tr>
+                            <th scope="col">Producto</th>
+                            <th scope="col">Categoría</th>
+                            <th scope="col">Precio</th>
+                            <th scope="col">Disponibilidad</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menu-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB PANEL: PEDIDOS -->
+        <div id="panel-orders" class="tab-panel" role="tabpanel" aria-labelledby="tab-orders" hidden>
+            <div class="panel-header">
+                <h2 class="panel-title">Gestión de Pedidos</h2>
+                <div class="panel-header-actions">
+                    <select class="filter-select" id="order-status-filter" onchange="filterOrders()"
+                        aria-label="Filtrar pedidos por estatus">
+                        <option value="all">Todos los estatus</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Preparando">Preparando</option>
+                        <option value="Entregado">Entregado</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="openModal('order')" id="btn-add-order">
+                        <span>+</span> Nuevo Pedido
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table class="data-table" aria-label="Tabla de pedidos">
+                    <thead>
+                        <tr>
+                            <th scope="col">ID Pedido</th>
+                            <th scope="col">Cliente / Usuario</th>
+                            <th scope="col">Productos</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Estatus</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB PANEL: INVENTARIO -->
+        <div id="panel-inventory" class="tab-panel" role="tabpanel" aria-labelledby="tab-inventory" hidden>
+            <div class="panel-header">
+                <h2 class="panel-title">Control de Inventario</h2>
+                <button class="btn btn-primary" onclick="openModal('inventory')" id="btn-add-inventory">
+                    <span>+</span> Agregar Insumo
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <table class="data-table" aria-label="Tabla de inventario">
+                    <thead>
+                        <tr>
+                            <th scope="col">Insumo</th>
+                            <th scope="col">Cantidad Actual</th>
+                            <th scope="col">Unidad</th>
+                            <th scope="col">Stock</th>
+                            <th scope="col">Alerta</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══════════════════ VIEW: DOCUMENTACIÓN ═══════════════════ -->
+    <main id="view-docs" class="view" aria-label="Documentación técnica" hidden>
+        <div class="docs-container">
+            <div class="docs-header">
+                <h1 class="page-title">Documentación Técnica</h1>
+                <p class="page-subtitle">Sistema de Gestión — Goop Cafetería v1.0</p>
+            </div>
+
+            <div class="docs-grid">
+                <!-- Descripción -->
+                <section class="docs-card full-width">
+                    <h2 class="docs-section-title">📋 Descripción del Sistema</h2>
+                    <p>Goop Cafetería es una aplicación web full-stack diseñada para la gestión integral de una
+                        cafetería. Permite a los administradores gestionar el catálogo e inventario, y a los usuarios
+                        registrarse y realizar pedidos en tiempo real.</p>
+                    <div class="tech-stack">
+                        <span class="tech-badge">Node.js + Express</span>
+                        <span class="tech-badge">SQLite</span>
+                        <span class="tech-badge">API REST</span>
+                        <span class="tech-badge">Autenticación (Users/Roles)</span>
+                        <span class="tech-badge">HTML5/CSS3</span>
+                    </div>
+                </section>
+
+                <!-- RF -->
+                <section class="docs-card">
+                    <h2 class="docs-section-title">✅ Requerimientos Funcionales</h2>
+                    <div class="req-list">
+                        <div class="req-item">
+                            <span class="req-badge rf">RF-AUTH</span>
+                            <div>
+                                <strong>Sistema de Autenticación</strong>
+                                <p>Login único para Admin y Usuarios. Registro de nuevos usuarios. Control de acceso
+                                    basado en roles (Admin ve Dashboard completo, Usuarios solo Catálogo y sus pedidos).
+                                </p>
+                            </div>
+                        </div>
+                        <div class="req-item">
+                            <span class="req-badge rf">RF1</span>
+                            <div>
+                                <strong>Gestión de Menú</strong>
+                                <p>El administrador podrá agregar, editar y eliminar productos del catálogo digital.
+                                    (Acceso exclusivo Admin).</p>
+                            </div>
+                        </div>
+                        <div class="req-item">
+                            <span class="req-badge rf">RF2</span>
+                            <div>
+                                <strong>Procesamiento de Pedidos</strong>
+                                <p>Usuarios pueden crear pedidos. Admins gestionan todos los pedidos y cambian estatus.
+                                    Cálculo automático de totales.</p>
+                            </div>
+                        </div>
+                        <div class="req-item">
+                            <span class="req-badge rf">RF3</span>
+                            <div>
+                                <strong>Control de Inventario</strong>
+                                <p>Visualización de stock con alertas de nivel bajo. CRUD de insumos (Acceso exclusivo
+                                    Admin).</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RNF -->
+                <section class="docs-card">
+                    <h2 class="docs-section-title">⚙️ Requerimientos No Funcionales</h2>
+                    <div class="req-list">
+                        <div class="req-item">
+                            <span class="req-badge rnf">RNF1</span>
+                            <div>
+                                <strong>Estética de Marca</strong>
+                                <p>Interfaz "Goop/Stitch": minimalismo orgánico, paleta tierra, soft UI. Experiencia
+                                    visual consistente en Login y Dashboard.</p>
+                            </div>
+                        </div>
+                        <div class="req-item">
+                            <span class="req-badge rnf">RNF2</span>
+                            <div>
+                                <strong>Seguridad</strong>
+                                <p>Contraseñas hasheadas (SHA-256). Tokens de sesión para validar peticiones API. Rutas
+                                    protegidas en Backend y Frontend.</p>
+                            </div>
+                        </div>
+                        <div class="req-item">
+                            <span class="req-badge rnf">RNF3</span>
+                            <div>
+                                <strong>Usabilidad</strong>
+                                <p>Flujos claros de Login/Registro. Acciones CRUD rápidas. Feedback visual (toasts) para
+                                    todas las operaciones.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══════════════════ MODAL: MENÚ ═══════════════════ -->
+    <div id="modal-menu" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-menu-title"
+        hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-menu-title">Agregar Producto</h2>
+                <button class="modal-close" onclick="closeModal('menu')" aria-label="Cerrar modal"><svg
+                        class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></button>
+            </div>
+            <form id="form-menu" class="modal-form" onsubmit="saveMenu(event)" novalidate>
+                <input type="hidden" id="menu-id" />
+                <div class="form-group">
+                    <label for="menu-name">Nombre del Producto *</label>
+                    <input type="text" id="menu-name" placeholder="Ej: Latte de Vainilla" required autocomplete="off" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="menu-category">Categoría *</label>
+                        <select id="menu-category" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="Bebidas">Bebidas</option>
+                            <option value="Alimentos">Alimentos</option>
+                            <option value="Postres">Postres</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="menu-price">Precio (MXN) *</label>
+                        <input type="number" id="menu-price" placeholder="0.00" min="0" step="0.50" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="menu-image">URL de Imagen</label>
+                    <input type="url" id="menu-image" placeholder="https://..." autocomplete="off" />
+                </div>
+                <div class="form-group form-toggle">
+                    <label for="menu-available">Disponible</label>
+                    <label class="toggle-switch" aria-label="Disponibilidad del producto">
+                        <input type="checkbox" id="menu-available" checked />
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('menu')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ MODAL: PEDIDO ═══════════════════ -->
+    <div id="modal-order" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-order-title"
+        hidden>
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-order-title">Nuevo Pedido</h2>
+                <button class="modal-close" onclick="closeModal('order')" aria-label="Cerrar modal"><svg
+                        class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></button>
+            </div>
+            <form id="form-order" class="modal-form" onsubmit="saveOrder(event)" novalidate>
+                <input type="hidden" id="order-id" />
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="order-client">Nombre del Cliente *</label>
+                        <input type="text" id="order-client" placeholder="Ej: Tu nombre" required autocomplete="off" />
+                    </div>
+                    <div class="form-group" id="group-order-status">
+                        <label for="order-status">Estatus</label>
+                        <select id="order-status">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Preparando">Preparando</option>
+                            <option value="Entregado">Entregado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Seleccionar Productos *</label>
+                    <div class="product-selector" id="product-selector" role="group"
+                        aria-label="Selección de productos">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+                <div class="order-total-display">
+                    <span>Total del Pedido:</span>
+                    <span class="order-total-value" id="order-total-display">$0.00</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('order')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ MODAL: INVENTARIO ═══════════════════ -->
+    <div id="modal-inventory" class="modal-overlay" role="dialog" aria-modal="true"
+        aria-labelledby="modal-inventory-title" hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-inventory-title">Agregar Insumo</h2>
+                <button class="modal-close" onclick="closeModal('inventory')" aria-label="Cerrar modal"><svg
+                        class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></button>
+            </div>
+            <form id="form-inventory" class="modal-form" onsubmit="saveInventory(event)" novalidate>
+                <input type="hidden" id="inventory-id" />
+                <div class="form-group">
+                    <label for="inventory-name">Nombre del Insumo *</label>
+                    <input type="text" id="inventory-name" placeholder="Ej: Café Molido" required autocomplete="off" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="inventory-quantity">Cantidad Actual *</label>
+                        <input type="number" id="inventory-quantity" placeholder="0" min="0" step="0.1" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="inventory-unit">Unidad de Medida *</label>
+                        <select id="inventory-unit" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="kg">Kilogramos (kg)</option>
+                            <option value="g">Gramos (g)</option>
+                            <option value="L">Litros (L)</option>
+                            <option value="mL">Mililitros (mL)</option>
+                            <option value="pzas">Piezas (pzas)</option>
+                            <option value="cajas">Cajas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inventory-max">Capacidad Máxima *</label>
+                    <input type="number" id="inventory-max" placeholder="Cantidad máxima de almacenamiento" min="1"
+                        step="0.1" required />
+                    <small class="form-hint">Se alertará cuando la cantidad sea menor al 10% de este valor</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('inventory')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ MODAL: CONFIRMAR ELIMINACIÓN ═══════════════════ -->
+    <div id="modal-confirm" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title"
+        hidden>
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-confirm-title">Confirmar Eliminación</h2>
+                <button class="modal-close" onclick="closeModal('confirm')" aria-label="Cerrar modal"><svg
+                        class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message">¿Estás seguro de que deseas eliminar este elemento?</p>
+                <p class="confirm-warning"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                        </path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg> Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('confirm')">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btn-confirm-delete"
+                    onclick="confirmDelete()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ FOOTER ═══════════════════ -->
+    <footer class="footer" role="contentinfo">
+        <footer class="footer" role="contentinfo">
+            <p>© 2026 Goop Cafetería · Hecho con <svg class="icon" viewBox="0 0 24 24" fill="currentColor"
+                    stroke="none">
+                    <path
+                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+                    </path>
+                </svg> y cariño</p>
+        </footer>
+
+        <script type="module" src="js/app.js"></script>
+</body>
+
+</html>
